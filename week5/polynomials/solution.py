@@ -11,7 +11,7 @@ elif len(sys.argv) != 2:
 poly_str = sys.argv[1]
     
 try:
-    poly = Polynomial.parse(sys.argv[1])
+    poly = Polynomial.from_str(sys.argv[1])
 except ValueError:
     print(f'could not parse "{poly_str}" to a polynomial')
 
