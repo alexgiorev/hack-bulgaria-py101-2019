@@ -9,7 +9,7 @@ poly_str = sys.argv[1]
     
 try:
     poly = Polynomial.from_str(sys.argv[1])
-except ValueError:
-    print(f'could not parse "{poly_str}" to a polynomial')
-
-print(poly.derivative)
+except ValueError as parse_error:
+    print(f'could not parse "{poly_str}" to a polynomial: {parse_error}')
+else:
+    print(poly.derivative)
