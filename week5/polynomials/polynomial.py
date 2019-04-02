@@ -1,4 +1,5 @@
 import itertools
+import re
 
 class Polynomial:
     # ==================================================
@@ -44,17 +45,42 @@ class Polynomial:
         # <signed-term> := (+|-) <term>
         # <polynomial> := <term> <signed-term>*
         # TODO: handle -x ^ 4
-
+        
         def parse_error(tokens, msg):
             raise ValueError(f'could not parse {tokens}: {msg}')
 
         # it will maybe be better if you read split_tokens and parse_token_group
         # after first reading the code after them
-        
+
+        def tokenize(poly_str):
+            # a token is one of the following:
+            # - an int
+            # - a sign: '+', '-', '*', '^'
+            # - a variable: 'x'
+            # possible performance improvement:
+            # use indexes rather than copying @poly_str
+
+            result = []
+            poly_str = poly_str.lstrip()
+            while poly_str:
+                first_char = poly_str[0]
+                if first_char in '+-*^x':
+                    result.append(first_char)
+                    poly_str = poly_str[1:]
+                elif first_char.isdigit():
+                    digits = re.match(r'\d+', poly_str).group()
+                    result.append(int(digits))
+                    poly_str = poly_str[len(digits):]
+                else:
+                    raise ValueError(f'invalid character: {first_char}')
+                poly_str = poly_str.lstrip()
+            return result
+            
         def split_tokens(tokens):
+            # @tokens must be an iterator and it must begin with a sign
             # splits @tokens into groups (lists) based on the signs '+' and '-'
             result = []
-            current_group = ['+']
+            current_group = [next(tokens)]
             for token in tokens:
                 if token in ('+', '-'):
                     result.append(current_group)
@@ -80,37 +106,44 @@ class Polynomial:
             if len(token_group) == 2:
                 if token_group[1] == 'x':
                     # [<sign>, 'x']
-                    token_group = [token_group[0], '1', '*', 'x', '^', '1']
+                    token_group = [token_group[0], 1, '*', 'x', '^', 1]
                 else:
                     # [<sign>, <int>]
-                    token_group += ['*', 'x', '^', '0']
+                    token_group += ['*', 'x', '^', 0]
             elif len(token_group) == 4:
                 if token_group[1] == 'x':
                     # [<sign>, 'x', '^', <expt>]
-                    token_group = [token_group[0], '1', '*', 'x', token_group[2], token_group[3]]
+                    token_group = [token_group[0], 1, '*', 'x', token_group[2], token_group[3]]
                 else:
                     # [<sign>, <int>, '*', 'x']
-                    token_group += ['^', '1']
+                    token_group += ['^', 1]
             elif len(token_group) != 6:
                 raise ValueError(f'unable to parse the token group {token_group}')
             
             # at this point len(token_group) == 6 is guaranteed
             
-            sign, coeff_str, mul_sign, var, expt_sign, expt_str = token_group
-            coeff = int(coeff_str) # will raise ValueError if @int_str cannot be parsed to an int
+            sign, coeff, mul_sign, var, expt_sign, expt = token_group
+            if type(coeff) is not int:
+                raise ValueError(f'coefficient should be an int, but was given {coeff}')
             if mul_sign != '*':
                 raise ValueError(f'invalid multiplication sign: {mul_sign}')
             if var != 'x':
                 raise ValueError(f'invalid variable: {var}')
             if expt_sign != '^':
                 raise ValueError(f'invalid exponentiation sign: {expt_sign}')
-            expt = int(expt_str) # will raise ValueError if expt_str cannot be parsed to an int                
-            if expt < 0:
-                raise ValueError(f'expt must be nonnegative, but was given {expt}')
+            if type(expt) is not int:
+                raise ValueError(f'expt must be an int, but was given {expt}')
             return (expt, coeff if sign == '+' else -coeff)
-    
-        tokens = poly_str.split()
-        token_groups = split_tokens(tokens)
+
+
+        tokens = tokenize(poly_str)
+        if tokens[0] not in ('+', '-'):
+            # for example when poly_str is "x^2 + 2*x + 1".
+            # we want to infer a "+" before the first term.
+            token_iter = itertools.chain(['+'], tokens)
+        else:
+            token_iter = iter(tokens)
+        token_groups = split_tokens(token_iter)
         return cls.from_terms(map(parse_token_group, token_groups))
 
     @property
