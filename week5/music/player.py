@@ -1,3 +1,5 @@
+# TODO: refactor and document this piece of shit
+
 import signal
 import os
 
