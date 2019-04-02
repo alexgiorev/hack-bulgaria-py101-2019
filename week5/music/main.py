@@ -1,6 +1,6 @@
 import os
 import sys
-import player
+from player import init as player_init
 from playlist import Playlist
 from pprint import pprint
 from song import Song
@@ -40,15 +40,15 @@ class Main:
         
         self._init_command_handlers()
         
-        def seh(): # for player.init
+        def seh(): # for player_init
             next_song = self.current_playlist.next_song()
             if next_song is None:
-                player.load(self.current_playlist.current_song.filename)
+                self.player.load(self.current_playlist.current_song.filename)
             else:
-                player.load(next_song.filename)
-                player.play()
+                self.player.load(next_song.filename)
+                self.player.play()
         
-        player.init(song_end_handler=seh)
+        self.player = player_init(song_end_handler=seh)
         
     def _init_command_handlers(self):
         # initializes self.handlers to a dict which maps command names to their corresponding handlers.
@@ -81,23 +81,23 @@ class Main:
 
         @checks_if_playlist_is_empty
         def play():
-            player.play()
+            self.player.play()
 
         @checks_if_playlist_is_empty
         def pause():
-            player.pause()
+            self.player.pause()
 
         def load_and_play_if_was_playing(filename):
-            was_playing = player.is_playing()
-            player.load(filename)
+            was_playing = self.player.isplaying
+            self.player.load(filename)
             if was_playing:
-                player.play()
+                self.player.play()
 
         @checks_if_playlist_is_empty
         def next_song():
             next_song = self.current_playlist.next_song()
             if next_song is None:
-                player.load(self.current_playlist.current_song.filename)
+                self.player.load(self.current_playlist.current_song.filename)
                 print('reached the end of the playlist')
             else:
                 load_and_play_if_was_playing(next_song.filename)
@@ -107,7 +107,7 @@ class Main:
             prev_song = self.current_playlist.previous_song()
             if prev_song is None:
                 # reload the current song
-                player.load(self.current_playlist.current_song.filename)
+                self.player.load(self.current_playlist.current_song.filename)
             else:
                 load_and_play_if_was_playing(prev_song.filename)
 
@@ -119,7 +119,7 @@ class Main:
         @checks_if_playlist_is_empty
         def shuffle():
             self.current_playlist.shuffle()
-            player.load(self.current_playlist.current_song.filename)
+            self.player.load(self.current_playlist.current_song.filename)
 
         @checks_if_playlist_is_empty
         def print_songs():
@@ -140,9 +140,9 @@ class Main:
             self.current_playlist = self.playlists[name]
 
             if self.current_playlist.is_empty():
-                player.unload()
+                self.player.unload()
             else:
-                player.load(self.current_playlist.current_song.filename)
+                self.player.load(self.current_playlist.current_song.filename)
 
         def print_playlists():
             # displays information about all of the playlists in the playlist collection
@@ -185,7 +185,7 @@ class Main:
                 print(f'aborting song creation: "{length}" is not a valid length string')
             else:
                 if self.current_playlist.is_empty():
-                    player.load(song.filename)
+                    self.player.load(song.filename)
                 self.current_playlist.add_song(song)
                 self.modified_playlists.add(self.current_playlist.name)
 
@@ -224,7 +224,7 @@ class Main:
                 else:
                     handler()
         finally:
-            player.unload()
+            self.player.unload()
             
         for playlist_name in self.modified_playlists:
             answer = input(f'save "{playlist_name}"? (yes/no): ')

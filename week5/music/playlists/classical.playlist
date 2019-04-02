@@ -1,0 +1,27 @@
+{
+   "name":"classical",
+   "songs":[
+      {
+         "title":"spanish-rhapsody",
+         "artist":"liszt",
+         "album":"nil",
+         "length":"12:56",
+         "filename":"music/sr.mp3"
+      },
+      {
+         "title":"fledermaus-overture",
+         "artist":"strauss",
+         "album":"nil",
+         "length":"0:10",
+         "filename":"music/strauss.mp3"
+      },
+      {
+         "title":"hungarian-rhapsody",
+         "artist":"liszt",
+         "album":"nil",
+         "length":"9:48",
+         "filename":"music/hr.mp3"
+      }
+   ],
+   "repeat":true
+}

@@ -1,0 +1,27 @@
+{
+    "name": "rock",
+    "songs": [
+        {
+            "title": "walk-this-way",
+            "artist": "aerosmith",
+            "album": "toys-in-the-attic",
+            "length": "3:24",
+            "filename": "music/wtw.mp3"
+        },
+        {
+            "title": "highway-to-hell",
+            "artist": "ac/dc",
+            "album": "nil",
+            "length": "3:28",
+            "filename": "music/hth.mp3"
+        },
+        {
+            "title": "5sec",
+            "artist": "ni",
+            "album": "ni",
+            "length": "5",
+            "filename": "music/5sec.mp3"
+        }
+    ],
+    "repeat": false
+}
