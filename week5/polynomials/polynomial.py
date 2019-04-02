@@ -26,6 +26,7 @@ class Polynomial:
     @classmethod
     def from_terms(cls, terms):
         # @term must be an iterable of (expt, coeff) pairs where each expt is nonnegative
+        # if @terms is empty, the zero polynomial is returned
         result_dict = {}
         for expt, coeff in terms:
             result_dict[expt] = result_dict.get(expt, 0) + coeff
@@ -42,6 +43,7 @@ class Polynomial:
         # <expt> := nonnegative int
         # <signed-term> := (+|-) <term>
         # <polynomial> := <term> <signed-term>*
+        # TODO: handle -x ^ 4
 
         def parse_error(tokens, msg):
             raise ValueError(f'could not parse {tokens}: {msg}')
@@ -61,7 +63,7 @@ class Polynomial:
                     current_group.append(token)
             result.append(current_group)
             return result
-
+        
         def parse_token_group(token_group):
             # a token group has one of the following forms:
             #     - [<sign>, 'x']
@@ -74,24 +76,21 @@ class Polynomial:
             # NOTICE: no need to check that token_group[0] is a valid sign;
             #         this is guaranteed by the function split_tokens
 
-            # if len(token_group) != 6, add the extra parts yourself so that the len becomes 6
+            # if len(token_group) < 6, add the extra parts yourself so that the len becomes 6
             if len(token_group) == 2:
                 if token_group[1] == 'x':
                     # [<sign>, 'x']
                     token_group = [token_group[0], '1', '*', 'x', '^', '1']
                 else:
                     # [<sign>, <int>]
-                    coeff_str = token_group[1]
-                    token_group = [token_group[0], coeff_str, '*', 'x', '^', '0']
+                    token_group += ['*', 'x', '^', '0']
             elif len(token_group) == 4:
                 if token_group[1] == 'x':
                     # [<sign>, 'x', '^', <expt>]
-                    expt_sign, expt_str = token_group[2], token_group[3]
-                    token_group = [token_group[0], '1', '*', 'x', expt_sign, expt_str]
+                    token_group = [token_group[0], '1', '*', 'x', token_group[2], token_group[3]]
                 else:
                     # [<sign>, <int>, '*', 'x']
-                    coeff_str, mul_sign, var = token_group[1:]
-                    token_group = [token_group[0], coeff_str, mul_sign, var, '^', '1']
+                    token_group += ['^', '1']
             elif len(token_group) != 6:
                 raise ValueError(f'unable to parse the token group {token_group}')
             
@@ -112,7 +111,7 @@ class Polynomial:
     
         tokens = poly_str.split()
         token_groups = split_tokens(tokens)
-        return cls.from_terms(map(parse_token_group, token_groups))        
+        return cls.from_terms(map(parse_token_group, token_groups))
 
     @property
     def terms(self):
@@ -138,7 +137,9 @@ class Polynomial:
         return self._dict.get(expt, 0)
 
     def __str__(self):
-        # TODO: document
+        # for the term with exponent zero, 'x ^ 0' is not shown
+        # for the term with exponent 1, '^ 1' is not shown
+        # for terms with coefficient 1 or -1, the '1' is not shown
         
         if self.is_zero:
             return '0'
@@ -182,14 +183,7 @@ class Polynomial:
     @property
     def derivative(self):
         # returns the polynomial that is the derivative of @self
+        return Polynomial.from_terms((expt - 1, coeff * expt)
+                                     for expt, coeff in self.terms
+                                     if expt != 0)
         
-        if self.is_zero:
-            return Polynomial.zero()
-        
-        result_dict = {}
-        
-        for expt, coeff in self.terms:
-            if expt != 0:
-                result_dict[expt-1] = coeff * expt
-
-        return Polynomial.from_dict(result_dict)
