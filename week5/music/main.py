@@ -134,7 +134,8 @@ class Main:
         def choose_playlist():
             name = input('enter playlist name: ')
             while name not in self.playlists:
-                name = input(f'"{name}" is not a valid playlist name;', 'try again: ')
+                print(f'"{name}" is not a valid playlist name')
+                name = input('try again: ')
 
 
             self.current_playlist = self.playlists[name]
