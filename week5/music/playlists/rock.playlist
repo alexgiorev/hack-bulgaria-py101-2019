@@ -5,16 +5,16 @@
             "title": "walk-this-way",
             "artist": "aerosmith",
             "album": "toys-in-the-attic",
-            "length": "3:24",
+            "seconds": 10,
             "filename": "music/wtw.mp3"
         },
         {
             "title": "highway-to-hell",
             "artist": "ac/dc",
             "album": "nil",
-            "length": "3:28",
+            "seconds": 10,
             "filename": "music/hth.mp3"
         }
     ],
-    "repeat": false
+    "cycle": false
 }
