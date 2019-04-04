@@ -1,0 +1,41 @@
+{
+    "name": "all",
+    "songs": [
+        {
+            "title": "hr",
+            "artist": "liszt",
+            "album": "",
+            "seconds": 11,
+            "filename": "music/hr.mp3"
+        },
+        {
+            "title": "spanish rhapsody",
+            "artist": "liszt",
+            "album": "no albums back then",
+            "seconds": 10,
+            "filename": "music/sr.mp3"
+        },
+        {
+            "title": "dfo",
+            "artist": "strauss",
+            "album": "waltz",
+            "seconds": 10,
+            "filename": "music/strauss.mp3"
+        },
+        {
+            "title": "walk this way",
+            "artist": "aerosmith",
+            "album": "toys in the attic",
+            "seconds": 10,
+            "filename": "music/wtw.mp3"
+        },
+        {
+            "title": "highway to hell",
+            "artist": "ac/dc",
+            "album": "highway to hell",
+            "seconds": 10,
+            "filename": "music/hth.mp3"
+        }
+    ],
+    "cycle": true
+}

@@ -1,5 +1,6 @@
 import os
 import sys
+import mutagen.mp3
 from player import init as player_init
 from playlist import Playlist
 from pprint import pprint
@@ -40,19 +41,20 @@ class Main:
         
         self._init_command_handlers()
         
-        def seh(): # for player_init
+        def song_end_handler(): # for player_init
             next_song = self.current_playlist.next_song()
             if next_song is None:
+                self.current_playlist.rewind()
                 self.player.load(self.current_playlist.current_song.filename)
             else:
                 self.player.load(next_song.filename)
                 self.player.play()
         
-        self.player = player_init(song_end_handler=seh)
+        self.player = player_init(song_end_handler)
         
     def _init_command_handlers(self):
         # initializes self.handlers to a dict which maps command names to their corresponding handlers.
-        # a handler is a procedure of no argument which when called will perform the action of the command
+        # a handler is a procedure of no arguments which when called will perform the action of the command
     
         def checks_if_playlist_is_chosen(handler):
             def result():
@@ -65,7 +67,7 @@ class Main:
         def checks_if_playlist_is_empty(handler):
             @checks_if_playlist_is_chosen
             def result():
-                if self.current_playlist.is_empty():
+                if self.current_playlist.is_empty:
                     print('current playlist is empty')
                 else:
                     handler()
@@ -97,8 +99,7 @@ class Main:
         def next_song():
             next_song = self.current_playlist.next_song()
             if next_song is None:
-                self.player.load(self.current_playlist.current_song.filename)
-                print('reached the end of the playlist')
+                print('you are at the end of the playlist')
             else:
                 load_and_play_if_was_playing(next_song.filename)
 
@@ -106,15 +107,14 @@ class Main:
         def previous_song():
             prev_song = self.current_playlist.previous_song()
             if prev_song is None:
-                # reload the current song
-                self.player.load(self.current_playlist.current_song.filename)
+                print('you are at the beginning of the playlist')
             else:
                 load_and_play_if_was_playing(prev_song.filename)
 
-        @checks_if_playlist_is_empty
-        def toggle_repeat():
-            # if the current playlist has repeat enabled, disables it and vice versa
-            self.current_playlist.repeat = not self.current_playlist.repeat
+        @checks_if_playlist_is_chosen
+        def toggle_cycle():
+            # if the current playlist has cycle enabled, disables it and vice versa
+            self.current_playlist.cycle = not self.current_playlist.cycle
 
         @checks_if_playlist_is_empty
         def shuffle():
@@ -124,7 +124,10 @@ class Main:
         @checks_if_playlist_is_empty
         def print_songs():
             for song in self.current_playlist.songs:
-                print(song.title)
+                if song is self.current_playlist.current_song:
+                    print(f'*** {song.title}')
+                else:
+                    print(f'    {song.title}')
 
         @checks_if_playlist_is_empty
         def pprint_playlist():
@@ -140,15 +143,18 @@ class Main:
 
             self.current_playlist = self.playlists[name]
 
-            if self.current_playlist.is_empty():
+            if self.current_playlist.is_empty:
                 self.player.unload()
             else:
                 self.player.load(self.current_playlist.current_song.filename)
 
         def print_playlists():
             # displays information about all of the playlists in the playlist collection
-            for playlist_name in self.playlists:
-                print(playlist_name)
+            for name, playlist in self.playlists.items():
+                if playlist is self.current_playlist:
+                    print(f'*** {name}')
+                else:
+                    print(f'    {name}')
 
         @end_on_eof
         def create_playlist():
@@ -170,25 +176,38 @@ class Main:
         @checks_if_playlist_is_chosen
         def add_song():
             # adds a new song in the current playlist based on information entered by the user
-            title = input('enter title: ')
+            
+            def get_title():
+                title = input('enter title: ')
+                while not title or self.current_playlist.contains_song_with_title(title):
+                    print('invalid title')
+                    title = input('try again: ')
+                return title
+            
+            def get_filename_and_seconds():
+                filename = input('enter filename: ')
+                while True:
+                    try:
+                        mp3 = mutagen.mp3.MP3(filename)
+                    except mutagen.MutagenError:
+                        print(f'"{filename}" is not a valid path name')
+                        filename = input('try again: ')
+                    else:
+                        break
+                return filename, int(mp3.info.length)
+            
+            # get song parts
+            title = get_title()
             artist = input('enter artist: ')
             album = input('enter album: ')
-            length = input('enter length: ')
-            filename = input('enter filename: ')
-
-            if not os.path.isfile(filename):
-                print(f'"{filename}" is not a valid file')
-                return
-
-            try:
-                song = Song(title, artist, album, length, filename)
-            except ValueError: # the length was not of the proper format
-                print(f'aborting song creation: "{length}" is not a valid length string')
-            else:
-                if self.current_playlist.is_empty():
-                    self.player.load(song.filename)
-                self.current_playlist.add_song(song)
-                self.modified_playlists.add(self.current_playlist.name)
+            filename, seconds = get_filename_and_seconds()            
+            song = Song(title, artist, album, seconds, filename)
+            
+            if self.current_playlist.is_empty:
+                self.player.load(song.filename)
+                
+            self.current_playlist.add_song(song)
+            self.modified_playlists.add(self.current_playlist.name)
 
         def remove_song():
             print('not implemented yet')
@@ -200,7 +219,7 @@ class Main:
                          'pause': pause,
                          'next': next_song,
                          'prev': previous_song,
-                         'toggle-repeat': toggle_repeat,
+                         'toggle-cycle': toggle_cycle,
                          'shuffle': shuffle,
                          'songs': print_songs,
                          'pprint': pprint_playlist,

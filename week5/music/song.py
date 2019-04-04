@@ -1,9 +1,9 @@
 class Song:
-    def __init__(self, title, artist, album, length_str, filename):
+    def __init__(self, title, artist, album, seconds, filename):
         self.title = title
         self.artist = artist
         self.album = album
-        self.seconds = Song.parse_length(length_str)
+        self.seconds = seconds
         self.filename = filename
 
     @staticmethod
@@ -51,23 +51,14 @@ class Song:
     @property
     def length(self):
         # returns the length of @self in human readable format
-        return Song.seconds_to_length(self.seconds)
-        
+        return Song.seconds_to_length(self.seconds)        
         
     def to_dict(self):
         return {attr_name: getattr(self, attr_name) for attr_name in
-                ('title', 'artist', 'album', 'length', 'filename')}
+                ('title', 'artist', 'album', 'seconds', 'filename')}
 
     @classmethod
     def from_dict(cls, d):
-        # if @d cannot be parsed to a Song, a ValueError will be raised
-        attrs = ('title', 'artist', 'album', 'length', 'filename')
-        try:
-            args = [d[attr] for attr in attrs]
-        except KeyError as ke:
-            raise ValueError(f'unable to parse the dict to a Song: missing the key "{ke.args[0]}"')
-        for attr, arg in zip(attrs, args):
-            if type(arg) is not str:
-                raise ValueError(f'unable to parse the dict to a Song: d["{attr}"] must be a str')
-        return cls(*args)
+        # assumes @d contains the needed attributes
+        return cls(*[d[attr] for attr in ('title', 'artist', 'album', 'seconds', 'filename')])
         
