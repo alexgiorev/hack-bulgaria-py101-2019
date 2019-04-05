@@ -2,6 +2,13 @@ import itertools
 import re
 
 class Polynomial:
+    # representation:
+    # each item in self._dict represents a term.
+    # the keys are the exponents and the values are the coefficients.
+    # if an exponent is not in self._dict, the coefficient in the corresponding term is assumed to be 0
+    
+    # rep invariant: there will be no 0 coefficients.
+    
     # ==================================================
     # data abstraction functions
     # make sure all procedures after the data abstraction block use the
@@ -16,7 +23,6 @@ class Polynomial:
     
     @classmethod
     def from_dict(cls, d):
-        # accepts a dict which maps exponents to coefficients
         # assumes @d is a dictionary which maps nonnegative integers to ints
         # returns the corresponding Polynomial
 
@@ -26,7 +32,8 @@ class Polynomial:
 
     @classmethod
     def from_terms(cls, terms):
-        # @term must be an iterable of (expt, coeff) pairs where each expt is nonnegative
+        # @terms must be an iterable of (expt, coeff) pairs
+        # each expt must be a nonnegative int, and each coeff must be an int
         # if @terms is empty, the zero polynomial is returned
         result_dict = {}
         for expt, coeff in terms:
@@ -38,30 +45,30 @@ class Polynomial:
     @classmethod
     def from_str(cls, poly_str):
         # converts the string @poly_str to a Polynomial
-        # raises ValueError if poly_str.split() is not a <polynomial> (see below)
-        # polynomial string grammar: 
-        # <term> := <int> * x ^ <expt> | <int> * x | x ^ <expt> | x | <int>
-        # <expt> := nonnegative int
-        # <signed-term> := (+|-) <term>
-        # <polynomial> := <term> <signed-term>*
-        # TODO: handle -x ^ 4
+        # raises ValueError if the token sequence of @poly_str is not a <polynomial> (see below)
+        # polynomial string grammar (the atomic elements of this grammar are tokens, not characters):
+        # tokens:
+        # <sign> := + | -
+        # <int> := [0-9]+
+        # <expt> := <int>
+        # the grammar below is on tokens, not characters:
+        # <unsigned-term> := <int> * x ^ <expt> | <int> * x | x ^ <expt> | x | <int>
+        # <signed-term> := <sign> <unsigned-term>
+        # <polynomial> := <sign>? <unsigned-term> <signed-term>*
         
         def parse_error(tokens, msg):
             raise ValueError(f'could not parse {tokens}: {msg}')
 
-        # it will maybe be better if you read split_tokens and parse_token_group
-        # after first reading the code after them
-
         def tokenize(poly_str):
             # a token is one of the following:
-            # - an int
+            # - a sequence of digits
             # - a sign: '+', '-', '*', '^'
             # - a variable: 'x'
             # possible performance improvement:
-            # use indexes rather than copying @poly_str
+            # use indexes rather than creating new strings at each step
 
             result = []
-            poly_str = poly_str.lstrip()
+            poly_str = ''.join(poly_str.split()) # remove whitespace
             while poly_str:
                 first_char = poly_str[0]
                 if first_char in '+-*^x':
@@ -73,7 +80,6 @@ class Polynomial:
                     poly_str = poly_str[len(digits):]
                 else:
                     raise ValueError(f'invalid character: {first_char}')
-                poly_str = poly_str.lstrip()
             return result
             
         def split_tokens(tokens):
@@ -91,31 +97,31 @@ class Polynomial:
             return result
         
         def parse_token_group(token_group):
-            # a token group has one of the following forms:
+            # a token group has one of the following forms (where coeff and expt are nonnegative ints):
             #     - [<sign>, 'x']
-            #     - [<sign>, <int>]
-            #     - [<sign>, <int>, '*', 'x'],
-            #     - [<sign>, 'x', '^', <expt>]
-            #     - [<sign>, <int>, '*', 'x', '^', <expt>]
-            # if @token_group does not have one of the above formats, a ValueError will be raised
-            # returns the (expt, coeff) pair corresponding to @token_group
-            # NOTICE: no need to check that token_group[0] is a valid sign;
-            #         this is guaranteed by the function split_tokens
-
+            #     - [<sign>, coeff]
+            #     - [<sign>, coeff, '*', 'x'],
+            #     - [<sign>, 'x', '^', expt]
+            #     - [<sign>, coeff, '*', 'x', '^', expt]
+            # if @token_group does not have one of the above formats, a ValueError will be raised.
+            # returns the (expt, coeff) pair corresponding to @token_group.
+            # notice: no need to check that token_group[0] is a valid sign;
+            #         this is guaranteed by the function split_tokens.
+        
             # if len(token_group) < 6, add the extra parts yourself so that the len becomes 6
             if len(token_group) == 2:
                 if token_group[1] == 'x':
                     # [<sign>, 'x']
                     token_group = [token_group[0], 1, '*', 'x', '^', 1]
                 else:
-                    # [<sign>, <int>]
+                    # [<sign>, int]
                     token_group += ['*', 'x', '^', 0]
             elif len(token_group) == 4:
                 if token_group[1] == 'x':
-                    # [<sign>, 'x', '^', <expt>]
+                    # [<sign>, 'x', '^', int]
                     token_group = [token_group[0], 1, '*', 'x', token_group[2], token_group[3]]
                 else:
-                    # [<sign>, <int>, '*', 'x']
+                    # [<sign>, int, '*', 'x']
                     token_group += ['^', 1]
             elif len(token_group) != 6:
                 raise ValueError(f'unable to parse the token group {token_group}')
@@ -137,6 +143,11 @@ class Polynomial:
 
 
         tokens = tokenize(poly_str)
+        
+        if not tokens:
+            # poly_str contains only whitespace
+            raise ValueError('cannot parse a whitespace string to a polynomial')
+                
         if tokens[0] not in ('+', '-'):
             # for example when poly_str is "x^2 + 2*x + 1".
             # we want to infer a "+" before the first term.
@@ -180,7 +191,7 @@ class Polynomial:
         def term_parts(term):
             expt, coeff = term
             result = []
-            result.append('-' if coeff < 0 else '+') # append sign
+            result.append('-' if coeff < 0 else '+')
 
             if abs(coeff) == 1:
                 if expt == 0:
