@@ -1,8 +1,11 @@
-installation:
-
+requirements:
 you need to have mpg321 installed and it must be in the directory /usr/bin/mpg321.
 
-====================================================================================================
+how to run:
+python3 main.py <playlist-dir>
+where <playlist-dir> will be the directory where the new playlists will be stored. also, if <playlist-dir> contains .playlist files,
+they will be parsed to playlists inside the application
+
 user interface:
 
 from the perspective of the user, the application has 3 parts:
