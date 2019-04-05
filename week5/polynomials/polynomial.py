@@ -14,6 +14,11 @@ class Polynomial:
     # make sure all procedures after the data abstraction block use the
     # procedures inside the data abstraction block
 
+    def __eq__(self, other):
+        # returns True iff @other is a Polynomial and
+        # @self and @other have the same coefficients for the same exponents
+        return type(other) is Polynomial and set(self.terms) == set(other.terms)
+    
     @classmethod
     def zero(cls):
         # returns the zero polynomial
