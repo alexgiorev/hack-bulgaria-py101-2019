@@ -220,7 +220,7 @@ class Polynomial:
         if first_parts[0] == '+':
             first_parts = first_parts[1:]
         else:
-            first_parts = ['-' + first_parts[1]] + first_parts[2:]
+            first_parts = ['- ' + first_parts[1]] + first_parts[2:]
         rest_parts = itertools.chain.from_iterable(map(term_parts, terms[1:]))
         all_parts = itertools.chain(first_parts, rest_parts)
         return ' '.join(all_parts)
