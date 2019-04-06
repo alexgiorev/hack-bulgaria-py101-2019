@@ -2,6 +2,7 @@ from song import Song
 import random
 import json
 import os
+from positional_list import PositionalList
 
 # a playlist consists of the following attributes:
 #     - a name
@@ -10,87 +11,91 @@ import os
 #     - a cycle flag
 
 # representation:
-#    - pretty self explanatory: self.name, self.songs, self.current_song_index (index into self.songs), self.cycle
+#    - self.name will be the name
+#    - self.cycle will be the cycle flag
+#    - self.songs will be a positional list containing the songs
+#    - self.current_song_pos will be the position of the current song in self.songs
 
 # rep invariants:
-#     - self.current_song_index must be a valid index in self.songs
-#     - if self.songs is empty, self.current_song_index must be None
+#     - self.current_song_pos must be a position from self.songs
+#     - if self.songs is empty, self.current_song_pos must be None
 
 
 class Playlist:    
-    def __init__(self, name, songs=None, cycle=False):        
+    def __init__(self, name):
         self.name = name
-        self.songs = songs if songs is not None else []
-        self.current_song_index = 0 if songs else None
-        self.cycle = cycle
+        self.songs = PositionalList()
+        self.current_song_pos = None
+        self.cycle = False
 
     @property
     def is_empty(self):
-        return not self.songs
+        return self.songs.is_empty()
 
     @property
     def current_song(self):
-        if self.current_song_index is None:
+        if self.is_empty:
             return None
-        return self.songs[self.current_song_index]
+        return self.current_song_pos.element()
 
     def rewind(self):
         if not self.is_empty:
-            self.current_song_index = 0
-    
+            self.current_song_pos = self.songs.first()
+
     def next_song(self):
         if self.is_empty:
             raise ValueError('attempted to take the next song of an empty playlist')
 
-        if len(self.songs) == 1:
-            return self.current_song if self.cycle else None
-        
-        if self.current_song_index == len(self.songs) - 1: # if the current song is the last one
+        next_song_pos = self.songs.after(self.current_song_pos)        
+        if next_song_pos is None:
             if self.cycle:
-                self.current_song_index = 0
+                self.current_song_pos = self.songs.first()
                 return self.current_song
             else:
                 return None
         else:
-            self.current_song_index += 1
+            self.current_song_pos = next_song_pos
             return self.current_song
-        
+            
     def previous_song(self):
         if self.is_empty:
-            raise ValueError('attempted to take the previous song of an empty playlist')
+            raise ValueError('attempted to take the next song of an empty playlist')
 
-        if len(self.songs) == 1:
-            return self.current_song if self.cycle else None
-        
-        if self.current_song_index == 0: # if the current song is the first one
+        prev_song_pos = self.songs.before(self.current_song_pos)        
+        if prev_song_pos is None:
             if self.cycle:
-                self.current_song_index = len(self.songs) - 1
+                self.current_song_pos = self.songs.last()
                 return self.current_song
             else:
                 return None
         else:
-            self.current_song_index -= 1
+            self.current_song_pos = prev_song_pos
             return self.current_song
     
     def add_song(self, song):
         # @song must be a Song instance
-        if not self.songs:
-            self.current_song_index = 0
-        self.songs.append(song)
+        new_pos = self.songs.add_last(song)
+        if self.is_empty:
+            self.current_song_pos = new_pos
 
     def add_songs(self, songs):
         # @songs must be an iterable yielding Song instances
-        self.songs.extend(songs)
-        if self.songs and self.current_song_index is None:
-            self.current_song_index = 0
+        was_empty = self.is_empty
+        
+        for song in songs:
+            self.songs.add_last(song)
+            
+        if not self.is_empty and was_empty:
+            self.current_song_pos = self.songs.first()
             
     def shuffle(self):
-        random.shuffle(self.songs)
-        self.current_song_index = 0 if self.songs else None
+        temp_list = list(self.songs)
+        random.shuffle(temp_list)
+        self.songs = PositionalList(temp_list)
+        self.current_song_pos = self.songs.first()
 
     def contains_song_with_title(self, title):
         return title in (song.title for song in self.songs)
-            
         
     @property
     def total_length(self):
@@ -117,14 +122,20 @@ class Playlist:
             error(f'd["name"] must be a string')
         
         try:
-            songs = [Song.from_dict(sd) for sd in song_dicts]
+            songs = PositionalList(Song.from_dict(sd) for sd in song_dicts)
         except ValueError:
             error('invalid song')
 
         if type(cycle) is not bool:
             error('d["cycle"] must be a boolean')
         
-        return cls(name, songs, cycle)
+        result = cls.__new__(cls)
+        result.name = name
+        result.songs = songs
+        result.current_song_pos = songs.first()
+        result.cycle = cycle
+        
+        return result
     
     def save(self, path):
         path = os.path.join(path, f'{self.name}.playlist')
