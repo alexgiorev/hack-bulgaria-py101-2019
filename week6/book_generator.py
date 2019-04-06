@@ -1,4 +1,5 @@
 # how to run: python3 book_generator.py <number-of-chapters> <maximum-number-of-words-in-a-chapter>
+# if you want to store the result in a file, just use python3 book_generator.py <noc> <maxw> > <file-name>
 
 import sys
 import string
@@ -39,7 +40,7 @@ def main():
     for chap_num in range(1, number_of_chapters + 1):
         all_lines.append(f'# Chapter {chap_num}')
         all_lines.extend(make_chapter(max_words))
-        all_lines.append('\n')
+        all_lines.append('') # for a line between chapters
     book = '\n'.join(all_lines)
     print(book)
     
