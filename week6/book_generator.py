@@ -5,14 +5,16 @@ import string
 import random
 import itertools
 
+MIN_WORD_LENGTH = 4
 MAX_WORD_LENGTH = 8
 
 def randword():
-    return ''.join(random.sample(string.ascii_lowercase, random.randint(1, MAX_WORD_LENGTH)))
+    return ''.join(random.sample(string.ascii_lowercase,
+                                 random.randint(MIN_WORD_LENGTH, MAX_WORD_LENGTH)))
 
 def make_chapter(max_words):
     # returns a list of lines (no '\n' at the end)
-    # for each line, len(line.split()) <= max_words
+    # the total number of words in the chapter will be less than or equal to @max_words
     
     lines = [] # result
     
@@ -20,8 +22,9 @@ def make_chapter(max_words):
     Nwords_left = random.randint(1, max_words)
     while Nwords_left > 0:
         if random.randint(1, 10) == 1: # determines the newline frequency
-            lines.append(' '.join(current_words))
-            current_words = []
+            if current_words:
+                lines.append(' '.join(current_words))
+                current_words = []
         else:
             current_words.append(randword())
             Nwords_left -= 1
@@ -37,7 +40,7 @@ def main():
         all_lines.append(f'# Chapter {chap_num}')
         all_lines.extend(make_chapter(max_words))
         all_lines.append('\n')
-    book = '\n'.join(itertools.chain(all_lines))    
+    book = '\n'.join(all_lines)
     print(book)
     
 main()

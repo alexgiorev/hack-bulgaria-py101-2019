@@ -12,7 +12,8 @@ def accepts(*types):
         def result(*args):
             check_types(args)
             return func(*args)
-            
+
+        result.__name__ = func.__name__
         return result
     return decorator
 
@@ -34,6 +35,7 @@ def encrypt(shift):
         def result(*args, **kwargs):
             return_str = func(*args, **kwargs)
             return ccypher(return_str, shift)
+        result.__name__ = func.__name__
         return result
     return decorator
 
@@ -43,6 +45,7 @@ def log(filename):
             with open(filename, 'a') as f:
                 f.write(f'{func.__name__} was called at {datetime.datetime.now()}\n')
             return func(*args, **kwargs)
+        result.__name__ = func.__name__
         return result
     return decorator
 
@@ -56,11 +59,6 @@ def performance(filename):
             with open(filename, 'a') as f:
                 f.write(f'{func.__name__} was called and took {time_taken} seconds to complete\n')
             return return_value
+        result.__name__ = func.__name__
         return result
     return decorator
-
-@performance('perflog')
-def perftest(n):
-    for k in range(n):
-        pass
-    print('f is done')
