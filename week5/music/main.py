@@ -115,6 +115,7 @@ class Main:
         def toggle_cycle():
             # if the current playlist has cycle enabled, disables it and vice versa
             self.current_playlist.cycle = not self.current_playlist.cycle
+            print('cycle is {}'.format('ON' if self.current_playlist.cycle else 'OFF'))
 
         @checks_if_playlist_is_empty
         def shuffle():
@@ -209,9 +210,25 @@ class Main:
             self.current_playlist.add_song(song)
             self.modified_playlists.add(self.current_playlist.name)
 
-        def remove_song():
-            print('not implemented yet')
 
+        @checks_if_playlist_is_empty
+        @end_on_eof
+        def remove_song():
+            title = input('enter title: ')
+            foregoing_song = self.current_playlist.current_song
+            removed = self.current_playlist.remove_song(title)
+
+            if removed is None:
+                print(f'there is no song with the title "{title}"')
+            else:
+                self.modified_playlists.add(self.current_playlist.name)
+                print('successful removal!')
+                if removed is foregoing_song:
+                    if self.current_playlist.is_empty:
+                        self.player.unload()
+                    else:
+                        self.player.load(self.current_playlist.current_song.filename)
+            
         def exit_application():
             self.keep_command_loop_going = False
 

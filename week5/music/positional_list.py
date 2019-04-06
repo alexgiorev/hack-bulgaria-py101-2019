@@ -90,12 +90,16 @@ class PositionalList(_DoublyLinkedBase):
     node = self._validate(p)
     return self._make_position(node._next)
 
-  def __iter__(self):
-    """Generate a forward iteration of the elements of the list."""
+  def positions(self):
+    """Generate a forward iteration of the positions of the list."""
     cursor = self.first()
     while cursor is not None:
-      yield cursor.element()
+      yield cursor
       cursor = self.after(cursor)
+  
+  def __iter__(self):
+    """Generate a forward iteration of the elements of the list."""
+    return (pos.element() for pos in self.positions())
 
   #------------------------------- mutators -------------------------------
   # override inherited version to return Position, rather than Node
