@@ -51,7 +51,6 @@ class Polynomial:
     def from_str(cls, poly_str):
         # converts the string @poly_str to a Polynomial
         # raises ValueError if the token sequence of @poly_str is not a <polynomial> (see below)
-        # polynomial string grammar (the atomic elements of this grammar are tokens, not characters):
         # tokens:
         # <sign> := + | -
         # <int> := [0-9]+
