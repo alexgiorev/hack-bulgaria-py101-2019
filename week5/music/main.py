@@ -34,14 +34,14 @@ class Main:
         if not os.path.isdir(path):
             raise ValueError(f'the path "{path}" must point to a directory')
         
-        self.playlist_dir = path
+        self.playlist_dir = path # needed for saving the modified playlists later
         self.playlists = parse_playlists(path)
-        self.modified_playlists = set()
+        self.modified_playlists = set() # will contain the names of the modified playlists
         self.current_playlist = None
         
-        self._init_command_handlers()
+        self.init_command_handlers() # sets self.handlers
         
-        def song_end_handler(): # for player_init
+        def song_end_handler(): # called asynchronously each time a song ends; needed by self.player
             next_song = self.current_playlist.next_song()
             if next_song is None:
                 self.current_playlist.rewind()
@@ -52,11 +52,22 @@ class Main:
         
         self.player = player_init(song_end_handler)
         
-    def _init_command_handlers(self):
+    def init_command_handlers(self):
         # initializes self.handlers to a dict which maps command names to their corresponding handlers.
-        # a handler is a procedure of no arguments which when called will perform the action of the command
-    
+        # a handler is a procedure of no arguments which when called will perform the action of the command.
+        # self.handlers is mostly used by self's command loop
+
+        self.handlers = {}
+
+        def command_handler(command_name):
+            # for functions which are command handlers
+            def add_to_handlers(func):
+                self.handlers[command_name] = func
+                return func
+            return add_to_handlers
+        
         def checks_if_playlist_is_chosen(handler):
+            # for commands which need a playlist to be chosen
             def result():
                 if self.current_playlist is None:
                     print('please select a playlist first')
@@ -65,6 +76,8 @@ class Main:
             return result
 
         def checks_if_playlist_is_empty(handler):
+            # for commands which need the current playlist ot not be empty
+            
             @checks_if_playlist_is_chosen
             def result():
                 if self.current_playlist.is_empty:
@@ -74,6 +87,11 @@ class Main:
             return result
 
         def end_on_eof(handler):
+            # for commands which need user input.
+            # if a handler is decorated with this, then if the user presses
+            # crtl-d at the terminal during the execution of the command,
+            # the handler simply ends, the EOFError is not propagated.
+            
             def result():
                 try:
                     handler()
@@ -81,10 +99,12 @@ class Main:
                     print()
             return result
 
+        @command_handler('play')
         @checks_if_playlist_is_empty
         def play():
             self.player.play()
 
+        @command_handler('pause')
         @checks_if_playlist_is_empty
         def pause():
             self.player.pause()
@@ -95,7 +115,8 @@ class Main:
             if was_playing:
                 self.player.play()
 
-        @checks_if_playlist_is_empty
+        @command_handler('next')
+        @checks_if_playlist_is_empty 
         def next_song():
             next_song = self.current_playlist.next_song()
             if next_song is None:
@@ -103,6 +124,7 @@ class Main:
             else:
                 load_and_play_if_was_playing(next_song.filename)
 
+        @command_handler('prev')
         @checks_if_playlist_is_empty
         def previous_song():
             prev_song = self.current_playlist.previous_song()
@@ -111,18 +133,21 @@ class Main:
             else:
                 load_and_play_if_was_playing(prev_song.filename)
 
+        @command_handler('toggle-cycle')
         @checks_if_playlist_is_chosen
         def toggle_cycle():
             # if the current playlist has cycle enabled, disables it and vice versa
             self.current_playlist.cycle = not self.current_playlist.cycle
             print('cycle is {}'.format('ON' if self.current_playlist.cycle else 'OFF'))
 
+        @command_handler('shuffle')
         @checks_if_playlist_is_empty
         def shuffle():
             self.current_playlist.shuffle()
             self.player.load(self.current_playlist.current_song.filename)
 
-        @checks_if_playlist_is_empty
+        @command_handler('songs')
+        @checks_if_playlist_is_empty 
         def print_songs():
             for song in self.current_playlist.songs:
                 if song is self.current_playlist.current_song:
@@ -130,10 +155,13 @@ class Main:
                 else:
                     print(f'    {song.title}')
 
+        @command_handler('pprint')
         @checks_if_playlist_is_empty
         def pprint_playlist():
             self.current_playlist.pprint()
 
+        @command_handler('cp')
+        @command_handler('choose-playlist')
         @end_on_eof
         def choose_playlist():
             name = input('enter playlist name: ')
@@ -149,6 +177,7 @@ class Main:
             else:
                 self.player.load(self.current_playlist.current_song.filename)
 
+        @command_handler('playlists')
         def print_playlists():
             # displays information about all of the playlists in the playlist collection
             for name, playlist in self.playlists.items():
@@ -157,6 +186,7 @@ class Main:
                 else:
                     print(f'    {name}')
 
+        @command_handler('create-playlist')
         @end_on_eof
         def create_playlist():
             # creates a new playlist in the playlist collection based on
@@ -169,10 +199,12 @@ class Main:
             self.playlists[name] = new_playlist
             self.modified_playlists.add(name)
 
+        @command_handler('total-length')
         @checks_if_playlist_is_empty
         def total_length():
             print(self.current_playlist.total_length)
 
+        @command_handler('add-song')
         @end_on_eof
         @checks_if_playlist_is_chosen
         def add_song():
@@ -211,6 +243,7 @@ class Main:
             self.modified_playlists.add(self.current_playlist.name)
 
 
+        @command_handler('remove-song')
         @checks_if_playlist_is_empty
         @end_on_eof
         def remove_song():
@@ -228,26 +261,10 @@ class Main:
                         self.player.unload()
                     else:
                         self.player.load(self.current_playlist.current_song.filename)
-            
+
+        @command_handler('exit')
         def exit_application():
             self.keep_command_loop_going = False
-
-        self.handlers = {'play': play,
-                         'pause': pause,
-                         'next': next_song,
-                         'prev': previous_song,
-                         'toggle-cycle': toggle_cycle,
-                         'shuffle': shuffle,
-                         'songs': print_songs,
-                         'pprint': pprint_playlist,
-                         'playlists': print_playlists,
-                         'create-playlist': create_playlist,
-                         'add-song': add_song,
-                         'remove-song': remove_song,
-                         'exit': exit_application,
-                         'choose-playlist': choose_playlist,
-                         'total-length': total_length,
-                         'cp': choose_playlist}
         
     def start_command_loop(self):
         self.keep_command_loop_going = True
