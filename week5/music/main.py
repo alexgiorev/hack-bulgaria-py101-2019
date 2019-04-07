@@ -61,6 +61,7 @@ class Main:
 
         def command_handler(command_name):
             # for functions which are command handlers
+            
             def add_to_handlers(func):
                 self.handlers[command_name] = func
                 return func
@@ -68,6 +69,7 @@ class Main:
         
         def checks_if_playlist_is_chosen(handler):
             # for commands which need a playlist to be chosen
+            
             def result():
                 if self.current_playlist is None:
                     print('please select a playlist first')
@@ -136,7 +138,6 @@ class Main:
         @command_handler('toggle-cycle')
         @checks_if_playlist_is_chosen
         def toggle_cycle():
-            # if the current playlist has cycle enabled, disables it and vice versa
             self.current_playlist.cycle = not self.current_playlist.cycle
             print('cycle is {}'.format('ON' if self.current_playlist.cycle else 'OFF'))
 
@@ -179,7 +180,6 @@ class Main:
 
         @command_handler('playlists')
         def print_playlists():
-            # displays information about all of the playlists in the playlist collection
             for name, playlist in self.playlists.items():
                 if playlist is self.current_playlist:
                     print(f'*** {name}')
