@@ -1,6 +1,7 @@
 import datetime
 import string
 from timeit import default_timer as timer
+from functools import wraps
 
 def accepts(*types):
     def decorator(func):
@@ -8,12 +9,12 @@ def accepts(*types):
             for i, (_type, arg) in enumerate(zip(types, args), start=1):
                 if type(arg) is not _type:
                     raise TypeError(f'Argument {i} of {func.__name__} is not {_type}')
-            
+
+        @wraps(func)
         def result(*args):
             check_types(args)
             return func(*args)
 
-        result.__name__ = func.__name__
         return result
     return decorator
 
@@ -32,25 +33,26 @@ def ccypher(astr, shift):
 
 def encrypt(shift):
     def decorator(func):
+        @wraps(func)
         def result(*args, **kwargs):
             return_str = func(*args, **kwargs)
             return ccypher(return_str, shift)
-        result.__name__ = func.__name__
         return result
     return decorator
 
 def log(filename):
     def decorator(func):
+        @wraps(func)
         def result(*args, **kwargs):
             with open(filename, 'a') as f:
                 f.write(f'{func.__name__} was called at {datetime.datetime.now()}\n')
             return func(*args, **kwargs)
-        result.__name__ = func.__name__
         return result
     return decorator
 
 def performance(filename):
     def decorator(func):
+        @wraps(func)
         def result(*args, **kwargs):
             start = timer()
             return_value = func(*args, **kwargs)
@@ -59,6 +61,6 @@ def performance(filename):
             with open(filename, 'a') as f:
                 f.write(f'{func.__name__} was called and took {time_taken} seconds to complete\n')
             return return_value
-        result.__name__ = func.__name__
         return result
     return decorator
+
