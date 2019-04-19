@@ -28,17 +28,12 @@ class assertRaises:
         if _type not in self.exc_types:
             raise assertRaises.WrongException(f'wrong exception was raised: {_type}')
 
-        if not value.args or value.args[0] != self.msg:
-            raise assertRaises.WrongException(f"the exception's message was {value.args[0]}, "
-                                              f'but expected {self.msg}')
-        
-        return True
+        if self.msg is not None:
+            # a message is expected
+            if not value.args:
+                raise assertRaises.WrongException(f'There is no message in the raised exception')
 
-if __name__ == '__main__':
-    with assertRaises(KeyError):
-        for k in range(1000000):
-            pass
-        print('doing something')
-        for k in range(1000000):
-            pass
-        raise KeyError
+            if value.args[0] != self.msg:
+                raise assertRaises.WrongException(f'expected the message "{self.msg}" '
+                                                  f'but got "{value.args[0]}"')        
+        return True
