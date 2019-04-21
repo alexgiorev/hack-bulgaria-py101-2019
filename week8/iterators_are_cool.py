@@ -122,11 +122,11 @@ def deep_compare(obj1, obj2):
             return True
 
         table.add(ids)
+
+        if type(obj1) is not type(obj2):
+            return False
         
         if type(obj1) is dict:
-            if type(obj2) is not dict:
-                return False
-
             if len(obj1) != len(obj2):
                 return False
 
@@ -136,9 +136,6 @@ def deep_compare(obj1, obj2):
 
             return True
         elif isiterable(obj1):
-            if not isiterable(obj2):
-                return False
-
             iter1, iter2 = iter(obj1), iter(obj2)
 
             for child1, child2 in zip(iter1, iter2):
